@@ -1,7 +1,9 @@
 /*
-  Password Generator
-	Version: 0.1.0
+			
+	Password Generator
+	Version: 0.2.0		
 	Author: Sir-Ignis
+			
 */
 
 #include <stdlib.h>
@@ -104,39 +106,66 @@ char *genPassword(struct password pref) {
 	return pwd;
 }
 
+/*MANUAL - prints out program synopsis and gives examples of how
+  to run the program
+  escape codes: 
+  "\e[1mbold\e[0m"
+  "\e[4munderline\e[0m"*/
 void man() {
-	clear(); //clears the console using regex
-	printf("\nMAN\n\n");
-	printf("arg format: -l || --length <n> -c || --complexity <n1>\nvalid examples:\n"
-			"[1]\n\n"
+	clear(); 
+	printf("\e[1m\e[4mMAN\e[0m\e[0m\n\n");
+
+	printf("Password Generator generates random passwords using libsodium.\n");
+
+	printf("\n\e[1mSYNOPSIS\e[0m:\n\n"
+			"[ \e[1m-l\e[0m ] [ \e[1m-c\e[0m ] [ \e[1m-f\e[0m ] [ \e[1mx y z\e[0m ]\n\n");
+
+	printf("\e[1mEXAMPLES\e[0m:\n\n"
+			"Example [0]\n\n"
 
 			"-l 20 -c 3\n\n"
 
 			"this would generate a password of length 20\n"
 			"consisting of a combination of letters, numbers\n"
-			"and special characters\n\n"
+			"and special characters\n\n\n"
 
-			"[2]\n\n"
+			"Example [1]\n\n"
 
 			"--length 30 --c 2\n\n"
 
 			"this would generate a password of length 30\n"
 			"consisting of a combination of letters and\n"
-			"numbers\n"
+			"numbers\n\n\n");
 
-			"[3]\n\n"
+	printf("Press any key to continue");
+	getchar();
+	printf("\033[1A%c[2K", 27); //move cursor up one line and clear that line
+	printf("Example [2]\n\n");
 
-			"--length 50 -c 1\n\n"
+	printf("--length 50 -c 1\n\n"
 
 			"this would generate a password of length 50\n"
-			"conisting of only letters\n\n"
+			"consisting of only letters\n\n\n"
+
+			"Example [3]\n\n"
+
+			"-l 100 -c 3 -f 3 4 6\n\n"
+
+			"this would generate a password of length 100\n"
+			"consisting letters, numbers and symbols;\n"
+			"the frequency of the characters is determined\n"
+			"by the numbers x, y and z; where the frequency\n"
+			"of the letters/numbers/special characters is\n"
+			"determined by checking if first y is factor of\n"
+			"the randomly generated number, then if z, else\n"
+			"a letter is used as the character.\n\n\n"			
 			);
-	printf("You can mix short and long argument options\n"
+	printf("\e[1mADDITIONAL INFO\e[0m:\n\nYou can mix short and long argument options\n"
 			"Length ranges from 1-100 (inclusive)\n"
 			"Complexity ranges from 1-3 (inclusive)\n\n"
 
-			"-c 1 means only letters"
-			"-c 2 means letters and numbers"
+			"-c 1 means only letters\n"
+			"-c 2 means letters and numbers\n"
 			"-c 3 means letters, numbers and special characters\n\n");
 }
 
@@ -149,7 +178,7 @@ void help() {
 
 /*checks if the five arguments
   entered match criteria if so
-	return 1 else -1
+  return 1 else -1
 */
 int fiveArgs(char *argv[] ) {
 	if(strcmp(argv[1],"-l")==0 || strcmp(argv[1],"--length") == 0) {
@@ -168,7 +197,7 @@ int fiveArgs(char *argv[] ) {
 
 /*checks if the nine arguments
   entered match criteria if so
-	return 2 else -1
+  return 1 else -1
 */
 int nineArgs(char *argv[] ) {
 	if(fiveArgs(argv)) {
@@ -179,12 +208,22 @@ int nineArgs(char *argv[] ) {
 			if( (ltrMod >= 0 && ltrMod <= 100) &&
 					(nmbrMod >= 0 && nmbrMod <= 100) &&
 					(spclMod >= 0 && spclMod <= 100) ) {
-						return 2;
+						return 1;
 			}
 		}
 	}
 	return -1;
 }
+
+/*checks if user entered man || --man || MAN || -man
+  and calls man if true else does nothing*/
+void getMan(char *argv[]) {
+	if(strcmp(argv[1],"man")==0 || strcmp(argv[1],"--man")==0 || 
+	   strcmp(argv[1],"MAN")==0 || strcmp(argv[1],"-man")==0) {
+		man();
+	}
+}
+
 
 /*checks the arg input and
   successful calls inputHandler
@@ -193,6 +232,9 @@ int argHandler(int argc, char *argv[] ) {
 	switch(argc) {
 		case 1:
 			return 0;
+		case 2:
+			getMan(argv);
+			return 1;
 		case 5:
 			return fiveArgs(argv);
 		case 9:
@@ -233,19 +275,19 @@ struct password prefCheck(char *argv[], struct password pref) {
 struct password inputHandler(int argc, char *argv[] ) {
 	struct password pref = initPwd(pref);
 	int check = argHandler(argc, argv);
-	if (check == 1 || check == 2) {
-		pref = prefCheck(argv, pref);
-		if (check == 2){
+	if (check == 1) {
+		if (argc == 5) {
+			pref = prefCheck(argv, pref);
+		} else if (argc == 9) {
 			pref.lttrModulo = atoi(argv[6]);
 			pref.nmbrModulo = atoi(argv[7]);
 			pref.spclModulo = atoi(argv[8]);
+		} else {
+			getMan(argv);
 		}
-	}
-	else {
-		if(check != 0) {
+	}else {
 			help();
 			exit(0);
-		}
 	}
 	return pref;
 }
