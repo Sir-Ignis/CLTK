@@ -1,12 +1,10 @@
-/*
-			
+/*		
 	Password Generator
-	Version: 0.2.0		
-	Author: Sir-Ignis
-			
+	Version: 0.3.0		
+	Author: Sir-Ignis			
 */
 
-#include <stdlib.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include "sodium.h"
@@ -95,7 +93,7 @@ char *genPassword(struct password pref) {
 				}
 				break;
 			case 3: //numbers+letters+special characters
-				special(pwd, i, pref.spclModulo, pref.nmbrModulo, pref.lttrModulo);
+				pwd = special(pwd, i, pref.spclModulo, pref.nmbrModulo, pref.lttrModulo);
 				break;
 
 		default:
@@ -131,7 +129,7 @@ void man() {
 
 			"Example [1]\n\n"
 
-			"--length 30 --c 2\n\n"
+			"--length 30 -c 2\n\n"
 
 			"this would generate a password of length 30\n"
 			"consisting of a combination of letters and\n"
@@ -216,12 +214,13 @@ int nineArgs(char *argv[] ) {
 }
 
 /*checks if user entered man || --man || MAN || -man
-  and calls man if true else does nothing*/
-void getMan(char *argv[]) {
+  and return 1 if true else 0*/
+int getMan(char *argv[]) {
 	if(strcmp(argv[1],"man")==0 || strcmp(argv[1],"--man")==0 || 
 	   strcmp(argv[1],"MAN")==0 || strcmp(argv[1],"-man")==0) {
-		man();
+		return 1;
 	}
+	return 0;
 }
 
 
@@ -229,16 +228,20 @@ void getMan(char *argv[]) {
   successful calls inputHandler
   otherwise calls man() */
 int argHandler(int argc, char *argv[] ) {
+	int flag = 0;
 	switch(argc) {
 		case 1:
-			return 0;
+			break;
 		case 2:
-			getMan(argv);
-			return 1;
+			flag = 1;
+			break;
 		case 5:
 			return fiveArgs(argv);
 		case 9:
 			return nineArgs(argv);
+	}
+	if(flag == 1 && getMan(argv) == 1) {
+		return 0;
 	}
 	return -1;
 }
@@ -263,47 +266,36 @@ int inputChecker() {
 	return -1;
 }
 
-/*used when 5 args entered*/
-struct password prefCheck(char *argv[], struct password pref) {
-	pref.length = atoi(argv[2]);
-	pref.complexity = atoi(argv[4]);
-	return pref;
-}
-
-/*assigns values to the preferences and returns them
-  or calls exits(0) depending on the user's input*/
-struct password inputHandler(int argc, char *argv[] ) {
-	struct password pref = initPwd(pref);
-	int check = argHandler(argc, argv);
-	if (check == 1) {
-		if (argc == 5) {
-			pref = prefCheck(argv, pref);
-		} else if (argc == 9) {
-			pref.lttrModulo = atoi(argv[6]);
-			pref.nmbrModulo = atoi(argv[7]);
-			pref.spclModulo = atoi(argv[8]);
-		} else {
-			getMan(argv);
-		}
-	}else {
-			help();
-			exit(0);
+/*used to assign values to pref*/
+struct password setPref(int argc, char *argv[], struct password pref) {
+	if (argc >= 5) {
+		pref.length = atoi(argv[2]);
+		pref.complexity = atoi(argv[4]);
+	} 
+	if (argc == 9) {
+		pref.lttrModulo = atoi(argv[6]);
+		pref.nmbrModulo = atoi(argv[7]);
+		pref.spclModulo = atoi(argv[8]);
 	}
 	return pref;
 }
 
 /*calls the input handler (IH) function
   and generates & prints a password based
-	on the pref returned from IH*/
-void mainHandler(int argc, char *argv[]) {
-	password pref = inputHandler(argc, argv);
-	char *pwd = (char*)malloc(pref.length+1);
-	pwd = genPassword(pref);
-	printf("Password: %s\n", pwd);
-	free(pwd);
-}
-
+  on the pref returned from IH*/
 int main(int argc, char *argv[] ) {
-	mainHandler(argc, argv);
+	int check = argHandler(argc, argv);
+	if(check != -1 && check != 0) {
+		password pref = initPwd(pref);
+		pref = setPref(argc, argv, pref);
+		char *pwd = (char*)malloc(pref.length+1);
+		pwd = genPassword(pref);
+		printf("Password: %s\n", pwd);
+		free(pwd);
+	} else if (check == -1) {
+		help();			
+	} else {
+		man();
+	}
 	return 0;
 }
